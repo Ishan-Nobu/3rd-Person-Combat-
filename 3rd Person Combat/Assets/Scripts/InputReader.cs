@@ -5,9 +5,12 @@ using UnityEngine.InputSystem;
 public class InputReader : MonoBehaviour, Controls.IPlayerActions
 {   
     public Vector2 MovementValue { get; private set; }
+    public event Action AttackEvent;
     public event Action JumpEvent;
     public event Action DodgeEvent;
     public event Action TargetEvent;
+    public bool IsBlocking { get; private set; }
+    public bool IsAttacking { get; private set; }
     private Controls controls;
     private void Awake()
     {
@@ -48,5 +51,30 @@ public class InputReader : MonoBehaviour, Controls.IPlayerActions
     {   
         if (!context.performed) return;
         TargetEvent?.Invoke();
+    }
+
+    public void OnAttack(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            AttackEvent?.Invoke();
+            IsAttacking = true;
+        }
+        else if (context.canceled) 
+        { 
+            IsAttacking = false;
+        }
+    }
+
+    public void OnBlock(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            IsBlocking = true;
+        }
+        else if (context.canceled)
+        {
+            IsBlocking = false;
+        }
     }
 }
