@@ -12,8 +12,10 @@ public class PlayerTargetingState : PlayerBaseState
 
     public override void Enter()
     {
-        stateMachine.InputReader.TargetEvent += OnCancel;
+        stateMachine.InputReader.TargetEvent += OnTargetCancel;
         stateMachine.InputReader.AttackEvent += OnAttack;
+        stateMachine.InputReader.DodgeEvent += OnDodge;
+        stateMachine.InputReader.JumpEvent += OnJump;
         stateMachine.Animator.CrossFadeInFixedTime(TargetingBlendTreeHash, crossFadeDuration);
     }
     public override void Tick(float deltaTime)
@@ -29,7 +31,7 @@ public class PlayerTargetingState : PlayerBaseState
             return;
         }
 
-        Vector3 movement = CalcMovement();
+        Vector3 movement = CalcMovement(deltaTime);
         Move(movement * stateMachine.TargetedMovementSpeed, deltaTime);
 
         UpdateAnimator(deltaTime);
@@ -38,28 +40,38 @@ public class PlayerTargetingState : PlayerBaseState
 
     public override void Exit()
     {   
-        stateMachine.InputReader.TargetEvent -= OnCancel;
+        stateMachine.InputReader.TargetEvent -= OnTargetCancel;
         stateMachine.InputReader.AttackEvent -= OnAttack;
+        stateMachine.InputReader.DodgeEvent -= OnDodge;
+        stateMachine.InputReader.JumpEvent -= OnJump;
     }
     private void OnAttack()
     {
         stateMachine.SwitchState(new PlayerAttackingState(stateMachine, 0));
     }
-    private void OnCancel()
+    private void OnTargetCancel()
     {   
         stateMachine.Targeter.Cancel();
         stateMachine.SwitchState(new PlayerFreeLookState(stateMachine));
     }
-    private Vector3 CalcMovement()
+    private void OnDodge()
+    {   
+        if (stateMachine.InputReader.MovementValue == Vector2.zero) { return; }
+        stateMachine.SwitchState(new PlayerDodgingState(stateMachine, stateMachine.InputReader.MovementValue));
+    }
+    private void OnJump()
+    {
+        stateMachine.SwitchState(new PlayerJumpingState(stateMachine));
+    }
+    private Vector3 CalcMovement(float deltaTime)
     {
         Vector3 movement = new Vector3();
-
+        
         movement += stateMachine.transform.right * stateMachine.InputReader.MovementValue.x;
         movement += stateMachine.transform.forward * stateMachine.InputReader.MovementValue.y;
-
+        
         return movement;
     }
-
     private void UpdateAnimator(float deltaTime)
     {
         if (stateMachine.InputReader.MovementValue.y == 0)
